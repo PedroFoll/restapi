@@ -3,12 +3,31 @@ from flask_pydantic_spec import FlaskPydanticSpec, Response, Request
 from models import pessoa_models
 from tinydb import TinyDB , Query
 
+queryPessoa = pessoa_models.QueryPessoa
 pessoa = pessoa_models.PessoaModelo
 lista_pessoas=pessoa_models.Lista_Pessoas
 database = TinyDB('database.json')
 server = Flask (__name__)
 spec = FlaskPydanticSpec('flask', title='Aula de Api')
 spec.register(server)
+
+
+@server.get('/pessoas') # Rota, endpoint, recurso
+@spec.validate (query = queryPessoa,
+                resp=Response(HTTP_200=lista_pessoas))
+def buscar_pessoas_por_campo():
+    """Retorna todas as pessoas do Banco de Dados"""
+    query = request.context.query
+    breakpoint
+    todas_as_pessoas = database.search(
+        Query().fragments(query)
+    )
+    return jsonify(
+        lista_pessoas(pessoas=database.all(),
+                      count=len(database.all())
+                      ).dict()
+    )
+
 
 @server.get('/pessoas') # Rota, endpoint, recurso
 @spec.validate(resp=Response(HTTP_200=lista_pessoas))
@@ -25,9 +44,11 @@ def buscar_pessoas():
 @spec.validate(resp=Response(HTTP_200=lista_pessoas))
 def buscar_pessoa():
     """Retorna uma Pessoa do Banco de Dados"""
-    pessoa = database.search(Query().id == id)[0]
-    return jsonify(pessoa)
-   
+    try:
+        pessoa = database.search(Query().id == id)[0]
+        return jsonify(pessoa)
+    except IndexError:
+        return {'message':'Pessoa não encontrada'}, 404
     
 @server.post('/pessoas')
 @spec.validate(body=Request(pessoa), resp=Response(HTTP_201=pessoa))
