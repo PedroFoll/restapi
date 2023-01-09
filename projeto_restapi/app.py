@@ -20,14 +20,23 @@ def buscar_pessoas():
                       ).dict()
     )
     
-
+    
+@server.get('/pessoas/<int:id>') # Rota, endpoint, recurso
+@spec.validate(resp=Response(HTTP_200=lista_pessoas))
+def buscar_pessoa():
+    """Retorna uma Pessoa do Banco de Dados"""
+    pessoa = database.search(Query().id == id)[0]
+    return jsonify(pessoa)
+   
+    
 @server.post('/pessoas')
-@spec.validate(body=Request(pessoa), resp=Response(HTTP_200=pessoa))
+@spec.validate(body=Request(pessoa), resp=Response(HTTP_201=pessoa))
 def inserir_pessoas():
     """INSERE UMA PESSOA NO BANCO DE DADOS"""
     body = request.context.body.dict()
     database.insert(body)
     return body
+
 
 @server.put('/pessoas/<int:id>')
 @spec.validate(
